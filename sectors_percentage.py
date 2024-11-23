@@ -1,5 +1,34 @@
 import pymem
 import time
+from flask import Flask, jsonify
+from threading import Thread
+import logging
+
+# Start a Flask server for communication
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+app = Flask(__name__)
+lap_data = {
+    "current_lap": 0,
+    "current_lap_time": 0,
+    "last_lap_time": 0,
+    "sector_times": [],
+    "best_sector_times": [],
+    "best_lap_time": float("inf"),
+}
+
+@app.route("/get_data", methods=["GET"])
+def get_data():
+    return jsonify(lap_data)
+
+def start_server():
+    app.run(port=5000, debug=False, use_reloader=False)
+
+# Start the server in a separate thread
+server_thread = Thread(target=start_server)
+server_thread.daemon = True
+server_thread.start()
 
 terminal_colors = {
     "YELLOW": "\033[93m",
@@ -10,7 +39,7 @@ terminal_colors = {
 
 # Game-specific details
 GAME_NAME = "Ultimate_Racing_2D_2.exe"
-PERCENTAGE_POINTER = 0x198DCFFF680  # Replace with your X pointer address
+PERCENTAGE_POINTER = 0x198DD0017A0  # Replace with your X pointer address
 
 # Attach to the game process
 try:
@@ -37,7 +66,7 @@ start_time = time.time()
 
 laps_times_and_sectors = {}
 best_sector_times = [float("inf")] * (len(track_divisions) + 1)
-best_lam_time = float("inf")
+best_lap_time = float("inf")
 
 def manage_sectors(sector_index, sector_time):
     if sector_time < best_sector_times[sector_index]:
@@ -46,7 +75,19 @@ def manage_sectors(sector_index, sector_time):
     else:
         color = terminal_colors["YELLOW"]
 
-    print(f"{color}Sector {sector_index + 1}: {sector_time:.2f} s{terminal_colors['END']}")
+    print(f"  {color}Sector {sector_index + 1}: {sector_time:.2f} s{terminal_colors['END']}")
+    lap_data["sector_times"] = laps_times_and_sectors.get(lap_number, [])
+
+def manage_lap(lap_time):
+    global best_lap_time
+
+    if lap_time < best_lap_time:
+        best_lap_time = lap_time
+        color = terminal_colors["GREEN"]
+    else:
+        color = terminal_colors["YELLOW"]
+
+    print(f"{color}Lap time: {lap_time:.2f} s{terminal_colors['END']}")
 
 while True:
     try:
@@ -63,7 +104,7 @@ while True:
 
                 if lap_number in laps_times_and_sectors and laps_times_and_sectors[lap_number]:
                     # Subtract previous sector time to calculate the actual sector time
-                    sector_time -= laps_times_and_sectors[lap_number][-1]
+                    sector_time -= sum(laps_times_and_sectors[lap_number])
 
                 laps_times_and_sectors[lap_number] = laps_times_and_sectors.get(lap_number, []) + [sector_time]
 
@@ -73,24 +114,34 @@ while True:
                 if sector_index >= len(track_divisions):
                     # Wait for the next lap to start
                     while int(pm.read_double(PERCENTAGE_POINTER)) == lap_number:
+                        current_time = time.time()
+                        lap_data["current_lap_time"] = current_time - start_time
                         time.sleep(0.001)
                     current_time = time.time()
                     sector_time = round(current_time - start_time, 2)
 
                     if lap_number in laps_times_and_sectors and laps_times_and_sectors[lap_number]:
                         # Subtract previous sector time to calculate the actual sector time
-                        sector_time -= laps_times_and_sectors[lap_number][-1]
+                        sector_time -= sum(laps_times_and_sectors[lap_number])
 
                     laps_times_and_sectors[lap_number] = laps_times_and_sectors.get(lap_number, []) + [sector_time]
 
                     manage_sectors(sector_index, sector_time)
 
                     lap_time = current_time - start_time
-                    print(f"Lap time: {lap_time:.2f} s")
+                    manage_lap(lap_time)
 
                     sector_index = 0
                     start_time = time.time()
                     lap_number += 1
+                    lap_data["current_lap"] = lap_number
+                    lap_data["last_lap_time"] = lap_time
+
+        # Update `lap_data` in your timing script where necessary:
+        current_time = time.time()
+        lap_data["current_lap_time"] = current_time - start_time
+        lap_data["best_sector_times"] = best_sector_times
+        lap_data["best_lap_time"] = best_lap_time
 
         time.sleep(0.001)
     except Exception as e:
