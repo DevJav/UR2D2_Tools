@@ -1,8 +1,45 @@
 import pymem
+import pymem.process
 import time
 from flask import Flask, jsonify
 from threading import Thread
 import logging
+
+# Game-specific details
+GAME_NAME = "Ultimate_Racing_2D_2.exe"
+POINTER_OFFSET = 0x021ACA98
+
+# Attach to the game process
+try:
+    pm = pymem.Pymem(GAME_NAME)
+    print(f"Attached to {GAME_NAME}!")
+
+    base_address = pymem.process.module_from_name(pm.process_handle, GAME_NAME).lpBaseOfDll
+    pointer = base_address + POINTER_OFFSET
+
+    print(hex(pointer))  # Print the pointer address
+
+    # read the pointer that poitner points
+    pointer = pm.read_bytes(pointer, 8)
+    pointer = int.from_bytes(pointer, byteorder='little')
+    print(hex(pointer))
+
+    offsets = [0x8, 0x68, 0x10, 0x48, 0x10, 0xEA0]
+
+    # read the pointer that pointer points
+    for offset in offsets:
+        pointer = pm.read_bytes(pointer + offset, 8)
+        pointer = int.from_bytes(pointer, byteorder='little')
+
+    # read the value that the final pointer points
+    PERCENTAGE_POINTER = pointer
+
+    # try to read the value that the pointer points
+    print(pm.read_double(PERCENTAGE_POINTER))
+except Exception as e:
+    print(f"Failed to attach to {GAME_NAME}: {e}")
+    exit()
+
 
 # Start a Flask server for communication
 log = logging.getLogger('werkzeug')
@@ -37,17 +74,6 @@ terminal_colors = {
     "END": "\033[0m",
 }
 
-# Game-specific details
-GAME_NAME = "Ultimate_Racing_2D_2.exe"
-PERCENTAGE_POINTER = 0x198DD0017A0  # Replace with your X pointer address
-
-# Attach to the game process
-try:
-    pm = pymem.Pymem(GAME_NAME)
-    print(f"Attached to {GAME_NAME}!")
-except Exception as e:
-    print(f"Failed to attach to {GAME_NAME}: {e}")
-    exit()
 
 
 track_divisions = [0.33, 0.66]
