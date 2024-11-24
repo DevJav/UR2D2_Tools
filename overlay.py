@@ -6,7 +6,6 @@ import win32con
 import win32api
 
 # Constants
-WIDTH, HEIGHT = 500, 120
 FPS = 30
 API_URL = "http://127.0.0.1:5000/get_data"
 TRANSPARENT_BLACK = (0, 0, 0, 128)
@@ -17,9 +16,29 @@ BLACK = (0, 0, 0)
 
 # Pygame Initialization
 pygame.init()
+
+# Get the screen size
+screen_width = win32api.GetSystemMetrics(0)
+screen_height = win32api.GetSystemMetrics(1)
+
+# Dynamic scaling factor based on screen height (you can adjust the multiplier)
+scale_factor = screen_height / 1080  # Assuming 1080p as base
+
+# Calculate the window size and font sizes based on screen resolution
+WIDTH = int(500 * scale_factor)
+HEIGHT = int(120 * scale_factor)
+font_size_small = int(24 * scale_factor)
+font_size_large = int(36 * scale_factor)
+vertical_line_spacing = int(10 * scale_factor)
+first_horizontal_line_spacing = int(10 * scale_factor)
+second_horizontal_line_spacing = int(300 * scale_factor)
+filler = int(10 * scale_factor)
+
+# Pygame setup
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("Game Overlay")
-font_small = pygame.font.Font(pygame.font.match_font('arial'), 24)
+font_small = pygame.font.Font(pygame.font.match_font('arial'), font_size_small)
+font_large = pygame.font.Font(pygame.font.match_font('arial'), font_size_large)
 clock = pygame.time.Clock()
 
 # Initialize Best Sector Times
@@ -70,33 +89,35 @@ def draw_overlay(data):
         update_best_sector_times(data["sector_times"])
 
         # Draw current lap time
-        draw_text(f"Lap Time: {data['current_lap_time']:.2f}", (20, 10))
+        draw_text(f"Lap Time: {data['current_lap_time']:.2f}", (first_horizontal_line_spacing, vertical_line_spacing))
 
         # Draw last lap time
-        draw_text(f"Last Lap Time: {data['last_lap_time']:.2f}", (300, 10))
+        draw_text(f"Last Lap Time: {data['last_lap_time']:.2f}", (second_horizontal_line_spacing, vertical_line_spacing))
 
         # Draw sector times
-        draw_text("Sector Times:", (20, 35))
-        draw_sector_times(data["sector_times"], (150, 35))
+        text_size_x, text_size_y = draw_text("Sector Times:", (first_horizontal_line_spacing, vertical_line_spacing + font_size_small))
+        draw_sector_times(data["sector_times"], (first_horizontal_line_spacing + text_size_x + filler, vertical_line_spacing + font_size_small))
 
         # Draw best sector times
-        draw_text("Best Sector Times:", (20, 60))
-        draw_sector_times(best_sector_times, (200, 60), True)
+        text_size_x, text_size_y = draw_text("Best Sector Times:", (first_horizontal_line_spacing, vertical_line_spacing + font_size_small * 2))
+        draw_sector_times(best_sector_times, (first_horizontal_line_spacing + text_size_x + filler, vertical_line_spacing + font_size_small * 2), is_best=True)
 
         # Draw best lap time
         best_lap_time = data["best_lap_time"]
         color = GREEN if best_lap_time < float("inf") else WHITE
-        draw_text(f"Best Lap Time: {best_lap_time:.2f}", (20, 85), color)
+        draw_text(f"Best Lap Time: {best_lap_time:.2f}", (first_horizontal_line_spacing, vertical_line_spacing + font_size_small * 3), color)
     else:
-        draw_text("Error: Unable to fetch data", (20, 70), YELLOW)
+        draw_text("Error: Unable to fetch data", (first_horizontal_line_spacing, vertical_line_spacing))
 
 # Helper: Draw text on the screen
 def draw_text(text, position, color=WHITE):
     rendered_text = font_small.render(text, True, color)
     screen.blit(rendered_text, position)
+    return rendered_text.get_size()
 
 # Helper: Draw sector times
 def draw_sector_times(times, start_position, is_best=False):
+    text_size_x = 0
     for i, time in enumerate(times):
         text = f"{time:.2f}" if not is_best or time < float("inf") else "--"
         if is_best:
@@ -105,7 +126,8 @@ def draw_sector_times(times, start_position, is_best=False):
             color = GREEN 
         else:
             color = YELLOW
-        draw_text(text, (start_position[0] + i * 60, start_position[1]), color)
+        text_width, _ = draw_text(text, (start_position[0] + text_size_x, start_position[1]), color)
+        text_size_x += text_width + filler
 
 # Main Loop
 def main():
