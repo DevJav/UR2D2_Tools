@@ -20,6 +20,15 @@ class LapManager:
         self.sector_index = 0
         self.laps_times_and_sectors = {}
 
+        launch_time_str = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+        self.file_name = f"lap_data_{launch_time_str}.txt"
+
+        with open(self.file_name, "w") as file:
+            file.write("Lap ")
+            for i in range(len(track_divisions) + 1):
+                file.write(f"S{i + 1} ")
+            file.write("LapTime\n")
+
     def manage_sectors(self, sector_index, sector_time):
         if sector_time < self.best_sector_times[sector_index]:
             self.best_sector_times[sector_index] = sector_time
@@ -61,7 +70,15 @@ class LapManager:
             self.update_lap_data(time.time())
             time.sleep(0.001)
 
+    def save_lap_data(self):
+        with open(self.file_name, "a") as file:  # Change "w" to "a" to append instead of overwrite
+            file.write(f"{self.lap_number} ")
+            for sector in self.laps_times_and_sectors[self.lap_number]:
+                file.write(f"{sector:.2f} ")
+            file.write(f"{self.lap_data['last_lap_time']:.2f}\n")
+
     def reset_for_new_lap(self):
+        self.save_lap_data()
         self.sector_index = 0
         self.start_time = time.time()
         self.lap_number += 1
