@@ -54,8 +54,14 @@ def enable_fullscreen_overlay():
 
 enable_fullscreen_overlay()
 
-# Initialize best sector times
-best_sector_times = [float("inf")] * 3
+# Initialize best sector times based on the number of track divisions
+data = fetch_data()
+if data:
+    number_of_track_divisions = data.get("number_of_track_divisions", 3)
+else:
+    number_of_track_divisions = 3  # Default to 3 if data is not available
+
+best_sector_times = [float("inf")] * number_of_track_divisions
 
 # Draw the overlay with styling
 def draw_overlay(data):

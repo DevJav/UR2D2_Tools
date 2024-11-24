@@ -7,6 +7,7 @@ class LapManager:
         self.best_sector_times = [float("inf")] * (len(track_divisions) + 1)
         self.best_lap_time = float("inf")
         self.lap_data = {
+            "number_of_track_divisions": (len(track_divisions) + 1),
             "current_lap": 0,
             "current_lap_time": 0,
             "last_lap_time": 0,
