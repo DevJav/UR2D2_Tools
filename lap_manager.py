@@ -65,11 +65,6 @@ class LapManager:
             self.laps_times_and_sectors.get(self.lap_number, []) + [sector_time]
         )
 
-    def wait_for_next_lap(self, memory_reader):
-        while int(memory_reader.read_double()) == self.lap_number:
-            self.update_lap_data(time.time())
-            time.sleep(0.001)
-
     def save_lap_data(self):
         with open(self.file_name, "a") as file:  # Change "w" to "a" to append instead of overwrite
             file.write(f"{self.lap_number} ")
