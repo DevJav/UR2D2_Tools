@@ -1,3 +1,2 @@
-- Spacing of the overlay depending on resolution
-- Storing sector/lap times
-- Loading sector/lap times
+- Configuration file
+- I can read throttle, break, right and left values from game - th_br.py

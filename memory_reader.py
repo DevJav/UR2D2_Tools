@@ -25,7 +25,10 @@ class MemoryReader:
             for offset in offsets:
                 pointer = int.from_bytes(self.pm.read_bytes(pointer + offset, 8), byteorder='little')
 
+            pointer += offsets[-1]
+
             self.pointer = pointer
+            # print(f"Pointer resolved at {hex(self.pointer)}")
             return pointer
         except Exception as e:
             raise RuntimeError(f"Failed to resolve pointer: {e}")

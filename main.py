@@ -6,7 +6,7 @@ from server import start_server
 # Constants
 GAME_NAME = "Ultimate_Racing_2D_2.exe"
 POINTER_OFFSET = 0x021ACA98
-OFFSETS = [0x8, 0x68, 0x10, 0x48, 0x10, 0xEA0]
+OFFSETS = [0x8, 0x68, 0x10, 0x48, 0x10, 0xEA0, 0x0]
 TRACK_DIVISIONS = [0.33, 0.66]
 TERMINAL_COLORS = {"YELLOW": "\033[93m", "GREEN": "\033[92m", "PURPLE": "\033[95m", "END": "\033[0m"}
 
