@@ -1,4 +1,5 @@
 import time
+import csv
 
 class LapManager:
     def __init__(self, track_divisions, terminal_colors):
@@ -21,12 +22,12 @@ class LapManager:
         self.laps_times_and_sectors = {}
 
         launch_time_str = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-        self.file_name = f"lap_data_{launch_time_str}.txt"
+        self.file_name = f"lap_data_{launch_time_str}.csv"
 
         with open(self.file_name, "w") as file:
-            file.write("Lap ")
+            file.write("Lap,")
             for i in range(len(track_divisions) + 1):
-                file.write(f"S{i + 1} ")
+                file.write(f"S{i + 1},")
             file.write("LapTime\n")
 
     def manage_sectors(self, sector_index, sector_time):
@@ -66,11 +67,10 @@ class LapManager:
         )
 
     def save_lap_data(self):
-        with open(self.file_name, "a") as file:  # Change "w" to "a" to append instead of overwrite
-            file.write(f"{self.lap_number} ")
-            for sector in self.laps_times_and_sectors[self.lap_number]:
-                file.write(f"{sector:.2f} ")
-            file.write(f"{self.lap_data['last_lap_time']:.2f}\n")
+        with open(self.file_name, "a", newline='') as file:
+            writer = csv.writer(file)
+            row = [self.lap_number] + [f"{time:.2f}" for time in self.laps_times_and_sectors[self.lap_number]] + [f"{self.lap_data['last_lap_time']:.2f}"]
+            writer.writerow(row)
 
     def reset_for_new_lap(self):
         self.save_lap_data()
