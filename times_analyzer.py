@@ -4,11 +4,13 @@ def highlight_best_and_apply_gradient(df):
     def highlight_best(series):
         """Highlight the best value in purple with transparency."""
         is_best = series == series.min()
-        return ['background-color: rgba(147, 112, 219, 0.5)' if v else '' for v in is_best]
+        return ['background-color: rgba(220, 0, 255, 0.5)' if v else '' for v in is_best]
 
     def gradient_background(series):
         """Apply a green-to-red gradient with transparency."""
-        norm = (series - series.min()) / (series.max() - series.min())
+        # Clip the series to handle outliers
+        clipped_series = series.clip(lower=series.quantile(0.05), upper=series.quantile(0.95))
+        norm = (clipped_series - clipped_series.min()) / (clipped_series.max() - clipped_series.min())
         colors = (1 - norm) * 120
         return [f'background-color: hsla({int(c)}, 100%, 75%, 0.5)' for c in colors]
 
@@ -19,7 +21,7 @@ def highlight_best_and_apply_gradient(df):
     return styled_df
 
 # Load CSV and normalize column names
-input_csv = "lap_data_2024-12-10_18-46-54.csv"
+input_csv = "lap_data_2024-12-13_12-13-11.csv"
 df = pd.read_csv(input_csv)
 df.columns = df.columns.str.strip()  # Strip spaces
 
@@ -74,6 +76,7 @@ with open("formatted_table.html", "w", encoding="utf-8") as f:
     f.write(html_content)
 
 print("Formatted table saved as: formatted_table.html")
+
 # Add custom CSS for highlighting row on hover
 html_content = html_content.replace(
     "</style>",

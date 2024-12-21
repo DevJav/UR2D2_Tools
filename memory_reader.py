@@ -22,7 +22,8 @@ class MemoryReader:
             pointer = self.base_address + self.pointer_offset
             pointer = int.from_bytes(self.pm.read_bytes(pointer, 8), byteorder='little')
 
-            for offset in offsets:
+            for offset in offsets[:-1]:
+                # print(f"Resolving pointer at {hex(pointer)}")
                 pointer = int.from_bytes(self.pm.read_bytes(pointer + offset, 8), byteorder='little')
 
             pointer += offsets[-1]
@@ -37,3 +38,11 @@ class MemoryReader:
         if self.pointer is None:
             raise RuntimeError("Pointer not resolved")
         return self.pm.read_double(self.pointer)
+    
+    def read_float(self):
+        if self.pointer is None:
+            raise RuntimeError("Pointer not resolved")
+        return self.pm.read_float(self.pointer)
+
+    def read_4bytes(self, address):
+        return self.pm.read_int(address)

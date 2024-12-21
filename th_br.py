@@ -1,8 +1,5 @@
 import time
 from memory_reader import MemoryReader
-import pygame
-import sys
-import math
 
 GAME_NAME = "Ultimate_Racing_2D_2.exe"
 POINTER_OFFSET = 0x021A8EA0
