@@ -52,8 +52,24 @@ def configure_window():
     ctypes.windll.user32.SetWindowLongW(hwnd, -20,
         ctypes.windll.user32.GetWindowLongW(hwnd, -20) | 0x80000 | 0x20)  # WS_EX_LAYERED | WS_EX_TRANSPARENT
     ctypes.windll.user32.SetLayeredWindowAttributes(hwnd, 0, 200, 0x2)  # Transparency
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0,
-        win32api.GetSystemMetrics(win32con.SM_CYSCREEN) - HEIGHT, 0, 0, win32con.SWP_NOSIZE)
+
+    # Find the Ultimate_Racing_2D_2.exe window
+    ur2d2_hwnd = win32gui.FindWindow(None, "Ultimate Racing 2D 2")
+    if ur2d2_hwnd:
+        rect = win32gui.GetWindowRect(ur2d2_hwnd)
+        ur2d2_x = rect[0]
+        ur2d2_y = rect[1]
+        ur2d2_width = rect[2] - rect[0]
+        ur2d2_height = rect[3] - rect[1]
+
+        # Position the overlay window at the bottom left of the Ultimate_Racing_2D_2 window
+        overlay_x = ur2d2_x
+        overlay_y = ur2d2_y + ur2d2_height - HEIGHT
+        win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, overlay_x, overlay_y, 0, 0, win32con.SWP_NOSIZE)
+    else:
+        # Default position if Ultimate_Racing_2D_2 window is not found
+        win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0,
+            win32api.GetSystemMetrics(win32con.SM_CYSCREEN) - HEIGHT, 0, 0, win32con.SWP_NOSIZE)
 
     # Enable fullscreen overlay compatibility
     accent = ctypes.c_int(2)  # ACCENT_ENABLE_TRANSPARENT
@@ -62,6 +78,22 @@ def configure_window():
     ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, data, ctypes.sizeof(data))
 
 configure_window()
+
+def update_overlay_position():
+    hwnd = pygame.display.get_wm_info()["window"]
+    ur2d2_hwnd = win32gui.FindWindow(None, "Ultimate Racing 2D 2")
+    
+    if ur2d2_hwnd:
+        rect = win32gui.GetWindowRect(ur2d2_hwnd)
+        ur2d2_x = rect[0]
+        ur2d2_y = rect[1]
+        ur2d2_width = rect[2] - rect[0]
+        ur2d2_height = rect[3] - rect[1]
+
+        # Recalculate the overlay position
+        overlay_x = ur2d2_x
+        overlay_y = ur2d2_y + ur2d2_height - HEIGHT
+        win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, overlay_x, overlay_y, 0, 0, win32con.SWP_NOSIZE)
 
 # Fetch data from the API
 def fetch_data():
@@ -143,6 +175,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
+
+        # Update overlay position
+        update_overlay_position()
 
         # Fetch data and render overlay
         screen.fill(BLACK)
