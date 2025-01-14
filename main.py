@@ -5,8 +5,8 @@ from server import start_server
 
 # Constants
 GAME_NAME = "Ultimate_Racing_2D_2.exe"
-POINTER_OFFSET = 0x021ACA98
-OFFSETS = [0x8, 0x68, 0x10, 0x48, 0x10, 0xEA0, 0x0]
+POINTER_OFFSET = 0x021AEAB8
+OFFSETS = [0x8, 0x68, 0x10, 0x48, 0x10, 0xEC0, 0x0]
 TRACK_DIVISIONS = [0.33, 0.66]
 TERMINAL_COLORS = {"YELLOW": "\033[93m", "GREEN": "\033[92m", "PURPLE": "\033[95m", "END": "\033[0m"}
 
@@ -17,6 +17,7 @@ lap_manager = LapManager(TRACK_DIVISIONS, TERMINAL_COLORS)
 # Attach to game and resolve memory pointers
 memory_reader.attach()
 memory_reader.resolve_pointer(OFFSETS)
+print("Successfully attached to game and resolved memory pointers.")
 
 # Start Flask server
 start_server(lap_manager.lap_data)
@@ -26,6 +27,8 @@ lap_manager.lap_number = int(memory_reader.read_double())
 print(f"Waiting for lap {lap_manager.lap_number + 1} to start...")
 while int(memory_reader.read_double()) == lap_manager.lap_number:
     time.sleep(0.001)
+
+print("Lap started!")
 
 lap_manager.lap_number += 1
 
