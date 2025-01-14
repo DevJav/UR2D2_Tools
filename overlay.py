@@ -25,10 +25,12 @@ screen_height = win32api.GetSystemMetrics(1)
 scale_factor = screen_height / 1080  # Assuming 1080p as base
 
 # Calculate the window size and font sizes based on screen resolution
-WIDTH = int(500 * scale_factor)
-HEIGHT = int(120 * scale_factor)
-font_size_small = int(24 * scale_factor)
-font_size_large = int(36 * scale_factor)
+# WIDTH = int(500 * scale_factor)
+# HEIGHT = int(120 * scale_factor)
+WIDTH=screen_width  
+HEIGHT=screen_height
+font_size_small = int(22 * scale_factor)
+font_size_large = int(34 * scale_factor)
 vertical_line_spacing = int(10 * scale_factor)
 first_horizontal_line_spacing = int(10 * scale_factor)
 second_horizontal_line_spacing = int(300 * scale_factor)
@@ -37,12 +39,18 @@ filler = int(10 * scale_factor)
 # Pygame setup
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("Game Overlay")
-font_small = pygame.font.Font(pygame.font.match_font('arial'), font_size_small)
-font_large = pygame.font.Font(pygame.font.match_font('arial'), font_size_large)
+font_small = pygame.font.Font('Formula1-Regular_web_0.ttf', font_size_small)
+font_large = pygame.font.Font('Formula1-Regular_web_0.ttf', font_size_large)
 clock = pygame.time.Clock()
 
 # Initialize Best Sector Times
 best_sector_times = []
+
+message = ""
+message_color = WHITE
+message_timer = 0
+MESSAGE_DURATION = 2  # Display message for 2 seconds
+ur2d2_center = (0, 0)
 
 # Window Configuration
 def configure_window():
@@ -80,6 +88,7 @@ def configure_window():
 configure_window()
 
 def update_overlay_position():
+    global ur2d2_center
     hwnd = pygame.display.get_wm_info()["window"]
     ur2d2_hwnd = win32gui.FindWindow(None, "Ultimate Racing 2D 2")
     
@@ -89,6 +98,7 @@ def update_overlay_position():
         ur2d2_y = rect[1]
         ur2d2_width = rect[2] - rect[0]
         ur2d2_height = rect[3] - rect[1]
+        ur2d2_center = (ur2d2_x + ur2d2_width // 2, ur2d2_y + ur2d2_height // 2)
 
         # Recalculate the overlay position
         overlay_x = ur2d2_x
@@ -105,20 +115,39 @@ def fetch_data():
 
 # Update best sector times
 def update_best_sector_times(sector_times):
-    global best_sector_times
+    global best_sector_times, message, message_color, message_timer
     for i, time in enumerate(sector_times):
-        if time < best_sector_times[i]:
+        if time < best_sector_times[i]:  # Better time found
+            difference = best_sector_times[i] - time
+            message = f"-{difference:.2f}"
+            message_color = GREEN
+            message_timer = MESSAGE_DURATION * FPS  # Convert seconds to frames
             best_sector_times[i] = time
+        elif best_sector_times[i] != float("inf"):  # Not a better time, but valid
+            difference = time - best_sector_times[i]
+            message = f"+{difference:.2f}"
+            message_color = YELLOW
+            message_timer = MESSAGE_DURATION * FPS
+
+# Draw the message at the center of the screen
+def draw_message():
+    global message_timer, ur2d2_center
+    if message_timer > 0:
+        rendered_message = font_large.render(message, True, message_color)
+        text_rect = rendered_message.get_rect(center=ur2d2_center)
+        screen.blit(rendered_message, text_rect)
+        message_timer -= 1
 
 # Draw overlay elements
-def draw_overlay(data):
+def draw_overlay(data, previous_data):
     overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     overlay_surface.fill(TRANSPARENT_BLACK)
     screen.blit(overlay_surface, (0, 0))
 
     if data:
         # Update sector times
-        update_best_sector_times(data["sector_times"])
+        if previous_data["sector_times"] != data["sector_times"]:
+            update_best_sector_times(data["sector_times"])
 
         # Draw current lap time
         draw_text(f"Lap Time: {data['current_lap_time']:.2f}", (first_horizontal_line_spacing, vertical_line_spacing))
@@ -161,12 +190,13 @@ def draw_sector_times(times, start_position, is_best=False):
         text_width, _ = draw_text(text, (start_position[0] + text_size_x, start_position[1]), color)
         text_size_x += text_width + filler
 
-# Main Loop
+# Main loop
 def main():
     global best_sector_times
 
     # Initialize sector times
     data = fetch_data()
+    previous_data = data
     track_divisions = data.get("number_of_track_divisions", 3) if data else 3
     best_sector_times = [float("inf")] * track_divisions
 
@@ -182,10 +212,13 @@ def main():
         # Fetch data and render overlay
         screen.fill(BLACK)
         data = fetch_data()
-        draw_overlay(data)
+        draw_overlay(data, previous_data)
+        draw_message()  # Draw the message at the center of the screen
 
         pygame.display.flip()
         clock.tick(FPS)
+
+        previous_data = data
 
     pygame.quit()
 
